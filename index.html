@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense Tracker • Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Tailwind config for nicer fonts & container
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", "sans-serif"],
+          },
+          container: { center: true, padding: "1rem" },
+        },
+      },
+      darkMode: 'class'
+    }
+  </script>
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    /* Hide number arrows for inputs */
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans">
+  <!-- App Wrapper -->
+  <div class="min-h-screen">
+    <!-- Top Nav -->
+    <header class="sticky top-0 z-40 border-b border-slate-200/70 dark:border-slate-800/60 bg-white/80 dark:bg-slate-900/70 backdrop-blur">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 grid place-items-center rounded-2xl bg-indigo-600 text-white font-bold shadow-sm">₹</div>
+          <div>
+            <h1 class="text-lg sm:text-xl font-semibold leading-tight">Expense Tracker</h1>
+            <p class="text-xs text-slate-500 -mt-0.5">Dashboard</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="addExpenseBtn" class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 text-sm font-medium shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            Add Expense
+          </button>
+          <button id="darkToggle" class="rounded-2xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800">
+            Toggle Theme
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <!-- Summary Cards -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+          <p class="text-sm text-slate-500">This Month</p>
+          <h3 class="mt-1 text-2xl font-semibold" id="card-month">₹0</h3>
+        </div>
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+          <p class="text-sm text-slate-500">Average / Day</p>
+          <h3 class="mt-1 text-2xl font-semibold" id="card-daily">₹0</h3>
+        </div>
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+          <p class="text-sm text-slate-500">Top Category</p>
+          <h3 class="mt-1 text-2xl font-semibold" id="card-topcat">—</h3>
+        </div>
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+          <p class="text-sm text-slate-500">Total Records</p>
+          <h3 class="mt-1 text-2xl font-semibold" id="card-count">0</h3>
+        </div>
+      </section>
+
+      <!-- Filters -->
+      <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label class="text-sm text-slate-600 dark:text-slate-300">From</label>
+            <input id="filterFrom" type="date" class="mt-1 w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label class="text-sm text-slate-600 dark:text-slate-300">To</label>
+            <input id="filterTo" type="date" class="mt-1 w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label class="text-sm text-slate-600 dark:text-slate-300">Category</label>
+            <select id="filterCategory" class="mt-1 w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">All</option>
+              <option>Food</option>
+              <option>Transport</option>
+              <option>Rent</option>
+              <option>Shopping</option>
+              <option>Entertainment</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="flex items-end gap-2">
+            <button id="applyFilters" class="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-sm font-medium">Apply</button>
+            <button id="resetFilters" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm">Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Grid: Table + Charts -->
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- Table -->
+        <div class="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <h2 class="font-semibold">Expenses</h2>
+            <div class="flex items-center gap-2">
+              <input id="search" type="text" placeholder="Search title…" class="w-40 sm:w-56 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+              <button id="exportCsv" class="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm">Export CSV</button>
+            </div>
+          </div>
+          <div class="overflow-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300">
+                <tr>
+                  <th class="text-left font-medium px-4 py-3">Date</th>
+                  <th class="text-left font-medium px-4 py-3">Title</th>
+                  <th class="text-left font-medium px-4 py-3">Category</th>
+                  <th class="text-right font-medium px-4 py-3">Amount (₹)</th>
+                  <th class="text-right font-medium px-4 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tbody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                <!-- rows injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="space-y-4">
+          <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+            <h3 class="font-semibold mb-2">By Category</h3>
+            <canvas id="pieChart" height="220"></canvas>
+          </div>
+          <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+            <h3 class="font-semibold mb-2">Monthly Trend</h3>
+            <canvas id="barChart" height="220"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div id="modal" class="fixed inset-0 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
+      <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <h3 id="modalTitle" class="font-semibold">Add Expense</h3>
+        <button id="closeModal" class="rounded-xl px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800">✕</button>
+      </div>
+      <form id="expenseForm" class="p-4 space-y-3">
+        <input type="hidden" id="expenseId" />
+        <div>
+          <label class="text-sm">Title</label>
+          <input id="title" required class="mt-1 w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g., Groceries">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm">Amount (₹)</label>
+            <input id="amount" type="number" min="0" step="0.01" required class="mt-1 w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="500">
+          </div>
+          <div>
+            <label class="text-sm">Category</label>
+            <select id="category" class="mt-1 w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+              <option>Food</option>
+              <option>Transport</option>
+              <option>Rent</option>
+              <option>Shopping</option>
+              <option>Entertainment</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="text-sm">Date</label>
+          <input id="date" type="date" required class="mt-1 w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" id="cancelBtn" class="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm">Cancel</button>
+          <button type="submit" class="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-sm font-medium">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ---- Theme toggle ----
+    const darkToggle = document.getElementById('darkToggle');
+    const root = document.documentElement;
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      root.classList.add('dark');
+    }
+    darkToggle.addEventListener('click', () => {
+      root.classList.toggle('dark');
+      localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light');
+    });
+
+    // ---- Data layer (localStorage for demo) ----
+    const STORAGE_KEY = 'expenses-demo-v1';
+    const categories = ['Food','Transport','Rent','Shopping','Entertainment','Other'];
+
+    function loadExpenses(){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){ return JSON.parse(raw); }
+      // Seed with demo data (current month + previous months)
+      const now = new Date();
+      const seed = [
+        {title:'Groceries', amount:1200, category:'Food', date: isoDate(new Date(now.getFullYear(), now.getMonth(), 3))},
+        {title:'Metro Pass', amount:600, category:'Transport', date: isoDate(new Date(now.getFullYear(), now.getMonth(), 5))},
+        {title:'Rent', amount:8000, category:'Rent', date: isoDate(new Date(now.getFullYear(), now.getMonth(), 1))},
+        {title:'T-Shirt', amount:900, category:'Shopping', date: isoDate(new Date(now.getFullYear(), now.getMonth(), 8))},
+        {title:'Movie', amount:350, category:'Entertainment', date: isoDate(new Date(now.getFullYear(), now.getMonth(), 12))},
+        {title:'Snacks', amount:180, category:'Food', date: isoDate(new Date(now.getFullYear(), now.getMonth()-1, 24))},
+        {title:'Cab', amount:250, category:'Transport', date: isoDate(new Date(now.getFullYear(), now.getMonth()-2, 11))},
+      ];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+      return seed;
+    }
+    function saveExpenses(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+
+    function isoDate(d){ return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+
+    let expenses = loadExpenses();
+
+    // ---- Modal logic ----
+    const modal = document.getElementById('modal');
+    const addBtn = document.getElementById('addExpenseBtn');
+    const closeModal = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const expenseForm = document.getElementById('expenseForm');
+    const expenseId = document.getElementById('expenseId');
+
+    function openModal(editItem){
+      document.getElementById('modalTitle').textContent = editItem ? 'Edit Expense' : 'Add Expense';
+      if(editItem){
+        expenseId.value = editItem.index;
+        document.getElementById('title').value = editItem.title;
+        document.getElementById('amount').value = editItem.amount;
+        document.getElementById('category').value = editItem.category;
+        document.getElementById('date').value = editItem.date;
+      }else{
+        expenseId.value = '';
+        expenseForm.reset();
+        document.getElementById('date').value = isoDate(new Date());
+      }
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    function hideModal(){ modal.classList.add('hidden'); modal.classList.remove('flex'); }
+
+    addBtn.addEventListener('click', ()=> openModal());
+    closeModal.addEventListener('click', hideModal);
+    cancelBtn.addEventListener('click', hideModal);
+    modal.addEventListener('click', (e)=>{ if(e.target === modal) hideModal(); });
+
+    expenseForm.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const item = {
+        title: document.getElementById('title').value.trim(),
+        amount: parseFloat(document.getElementById('amount').value || '0'),
+        category: document.getElementById('category').value,
+        date: document.getElementById('date').value
+      };
+      if(!item.title || !item.date) return;
+      const id = expenseId.value;
+      if(id !== ''){
+        expenses[Number(id)] = item;
+      } else {
+        expenses.unshift(item);
+      }
+      saveExpenses(expenses);
+      hideModal();
+      render();
+    });
+
+    // ---- Table + Filters + Search ----
+    const tbody = document.getElementById('tbody');
+    const search = document.getElementById('search');
+    const filterFrom = document.getElementById('filterFrom');
+    const filterTo = document.getElementById('filterTo');
+    const filterCategory = document.getElementById('filterCategory');
+
+    document.getElementById('applyFilters').addEventListener('click', render);
+    document.getElementById('resetFilters').addEventListener('click', ()=>{
+      search.value=''; filterFrom.value=''; filterTo.value=''; filterCategory.value=''; render();
+    });
+
+    search.addEventListener('input', render);
+
+    function filtered(){
+      const q = search.value.trim().toLowerCase();
+      const from = filterFrom.value ? new Date(filterFrom.value) : null;
+      const to = filterTo.value ? new Date(filterTo.value) : null;
+      const cat = filterCategory.value;
+
+      return expenses.filter((e)=>{
+        const d = new Date(e.date);
+        const matchQ = !q || e.title.toLowerCase().includes(q);
+        const matchFrom = !from || d >= from;
+        const matchTo = !to || d <= to;
+        const matchCat = !cat || e.category === cat;
+        return matchQ && matchFrom && matchTo && matchCat;
+      }).sort((a,b)=> new Date(b.date) - new Date(a.date));
+    }
+
+    function formatINR(x){
+      return new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(x).replace(/^\D+/, '₹');
+    }
+
+    function render(){
+      const rows = filtered();
+      tbody.innerHTML = '';
+      rows.forEach((e, idx)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-4 py-3 whitespace-nowrap">${e.date}</td>
+          <td class="px-4 py-3">${escapeHtml(e.title)}</td>
+          <td class="px-4 py-3">${e.category}</td>
+          <td class="px-4 py-3 text-right">${Number(e.amount).toFixed(2)}</td>
+          <td class="px-4 py-3 text-right">
+            <button class="text-indigo-600 hover:underline mr-3" data-edit="${expenses.indexOf(e)}">Edit</button>
+            <button class="text-rose-600 hover:underline" data-del="${expenses.indexOf(e)}">Delete</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+
+      // row actions
+      tbody.querySelectorAll('[data-edit]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const i = Number(btn.getAttribute('data-edit'));
+          openModal({ index: i, ...expenses[i] });
+        });
+      });
+      tbody.querySelectorAll('[data-del]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const i = Number(btn.getAttribute('data-del'));
+          if(confirm('Delete this expense?')){
+            expenses.splice(i,1); saveExpenses(expenses); render();
+          }
+        });
+      });
+
+      updateCards(rows);
+      updateCharts(rows);
+    }
+
+    function updateCards(rows){
+      const cardMonth = document.getElementById('card-month');
+      const cardDaily = document.getElementById('card-daily');
+      const cardTop = document.getElementById('card-topcat');
+      const cardCount = document.getElementById('card-count');
+
+      const now = new Date();
+      const monthRows = rows.filter(r=>{
+        const d = new Date(r.date); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+      });
+      const monthTotal = monthRows.reduce((s,r)=> s + Number(r.amount||0), 0);
+      cardMonth.textContent = formatINR(monthTotal);
+
+      const uniqueDays = new Set(rows.map(r=> r.date)).size || 1;
+      cardDaily.textContent = formatINR(rows.reduce((s,r)=> s+Number(r.amount||0),0) / uniqueDays);
+
+      const byCat = {};
+      rows.forEach(r=> byCat[r.category] = (byCat[r.category]||0) + Number(r.amount||0));
+      const top = Object.entries(byCat).sort((a,b)=> b[1]-a[1])[0];
+      cardTop.textContent = top ? `${top[0]} • ${formatINR(top[1])}` : '—';
+
+      cardCount.textContent = rows.length;
+    }
+
+    // ---- Charts ----
+    let pieChart, barChart;
+
+    function updateCharts(rows){
+      const ctxPie = document.getElementById('pieChart');
+      const ctxBar = document.getElementById('barChart');
+
+      // Pie: sum by category
+      const catTotals = categories.map(c => rows.filter(r=> r.category===c).reduce((s,r)=> s+Number(r.amount||0),0));
+      const pieData = {
+        labels: categories,
+        datasets: [{ data: catTotals }]
+      };
+
+      if(pieChart){ pieChart.data = pieData; pieChart.update(); }
+      else { pieChart = new Chart(ctxPie, { type:'pie', data: pieData, options:{ plugins:{ legend:{ position:'bottom' }}}}); }
+
+      // Bar: last 6 months totals
+      const months = [];
+      const now = new Date();
+      for(let i=5;i>=0;i--){
+        const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+        const label = d.toLocaleString('en-US', { month:'short', year:'2-digit' });
+        const total = rows.filter(r=>{
+          const rd = new Date(r.date);
+          return rd.getMonth()===d.getMonth() && rd.getFullYear()===d.getFullYear();
+        }).reduce((s,r)=> s+Number(r.amount||0),0);
+        months.push({ label, total });
+      }
+      const barData = {
+        labels: months.map(m=> m.label),
+        datasets: [{ label:'₹', data: months.map(m=> m.total) }]
+      };
+
+      if(barChart){ barChart.data = barData; barChart.update(); }
+      else { barChart = new Chart(ctxBar, { type:'bar', data: barData, options:{ plugins:{ legend:{ display:false }}, scales:{ y:{ beginAtZero:true }}}}); }
+    }
+
+    // ---- CSV Export ----
+    document.getElementById('exportCsv').addEventListener('click', ()=>{
+      const rows = filtered();
+      const header = 'date,title,category,amount\n';
+      const lines = rows.map(r=> `${r.date},${csvEscape(r.title)},${csvEscape(r.category)},${r.amount}`);
+      const blob = new Blob([header + lines.join('\n')], { type:'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'expenses.csv'; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ---- Helpers ----
+    function escapeHtml(str){
+      return str.replace(/[&<>"']/g, (c)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+    }
+    function csvEscape(str){
+      if(/[,"\n]/.test(str)) return '"'+str.replace(/"/g,'""')+'"';
+      return str;
+    }
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
